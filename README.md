@@ -53,7 +53,103 @@ Sistema completo de gestión empresarial desarrollado con el stack tecnológico 
 - Preferencias de notificaciones
 - Gestión de base de datos
 
-## 🛠️ Instalación
+## 🐳 Inicio Rápido con Docker (Recomendado)
+
+### Requisitos Previos
+- Docker Desktop instalado y corriendo
+- Git
+
+### Opción 1: Scripts Automatizados (Más Fácil)
+
+```bash
+# 1. Clonar el repositorio
+git clone <tu-repositorio>
+cd Template-gestion
+
+# 2. Iniciar todos los servicios (PostgreSQL + Next.js)
+./scripts/start.sh dev
+
+# La aplicación estará disponible en:
+# 🌐 http://localhost:3000
+# 🗄️ PostgreSQL en localhost:5432
+```
+
+**Comandos disponibles:**
+
+```bash
+# Iniciar en modo desarrollo
+./scripts/start.sh dev
+
+# Ver logs en tiempo real
+./scripts/logs.sh app
+
+# Iniciar Prisma Studio (GUI para la BD)
+./scripts/start.sh studio
+# 🎨 Disponible en http://localhost:5555
+
+# Detener servicios
+./scripts/stop.sh
+
+# Detener todo (incluyendo Prisma Studio)
+./scripts/stop.sh all
+
+# Limpiar todo (⚠️ elimina la base de datos)
+./scripts/stop.sh clean
+```
+
+### Opción 2: Comandos npm
+
+```bash
+# Iniciar desarrollo
+npm run docker:dev
+
+# Ver logs
+npm run docker:dev:logs
+
+# Iniciar Prisma Studio
+npm run docker:studio
+
+# Detener
+npm run docker:dev:stop
+
+# Reconstruir e iniciar
+npm run docker:dev:build
+```
+
+### Modo Producción
+
+```bash
+# Iniciar en modo producción
+./scripts/start.sh prod
+# o
+npm run docker:prod
+
+# Detener producción
+./scripts/stop.sh prod
+# o
+npm run docker:prod:stop
+```
+
+### Servicios Docker
+
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| Next.js App | 3000 | Aplicación web principal |
+| PostgreSQL | 5432 | Base de datos |
+| Prisma Studio | 5555 | GUI para gestionar la BD (opcional) |
+
+### ¿Qué incluye Docker?
+
+✅ PostgreSQL 16 preconfigurado
+✅ Next.js con hot-reload en desarrollo
+✅ Prisma configurado automáticamente
+✅ Variables de entorno listas
+✅ Volúmenes persistentes para la BD
+✅ Network aislado para los servicios
+
+---
+
+## 🛠️ Instalación Manual (Sin Docker)
 
 ### Requisitos Previos
 - Node.js 20+ LTS
@@ -147,6 +243,15 @@ Template-gestion/
 │   └── utils.ts             # Funciones de utilidad
 ├── prisma/                  # Configuración de Prisma
 │   └── schema.prisma        # Esquema de base de datos
+├── scripts/                 # Scripts de automatización
+│   ├── start.sh             # Script de inicio
+│   ├── stop.sh              # Script de detención
+│   └── logs.sh              # Script para ver logs
+├── Dockerfile               # Dockerfile para producción
+├── Dockerfile.dev           # Dockerfile para desarrollo
+├── docker-compose.yml       # Orquestación Docker (desarrollo)
+├── docker-compose.prod.yml  # Orquestación Docker (producción)
+├── .dockerignore            # Archivos ignorados por Docker
 ├── .env.example             # Variables de entorno ejemplo
 ├── next.config.js           # Configuración de Next.js
 ├── tailwind.config.ts       # Configuración de Tailwind
@@ -235,6 +340,74 @@ NEXTAUTH_SECRET=...
 NEXTAUTH_URL=https://tu-dominio.vercel.app
 ```
 
+## 🔧 Troubleshooting Docker
+
+### El puerto 3000 ya está en uso
+
+```bash
+# Ver qué está usando el puerto
+lsof -i :3000
+
+# Detener el proceso o cambiar el puerto en docker-compose.yml
+```
+
+### El puerto 5432 (PostgreSQL) ya está en uso
+
+Si tienes PostgreSQL instalado localmente:
+
+```bash
+# Opción 1: Detener PostgreSQL local
+sudo service postgresql stop
+
+# Opción 2: Cambiar el puerto en docker-compose.yml
+# Edita la línea: "5433:5432" (mapea al puerto 5433)
+```
+
+### La base de datos no tiene datos
+
+```bash
+# Acceder al contenedor de la app
+./scripts/start.sh dev
+docker exec -it template-gestion-app-dev sh
+
+# Dentro del contenedor, ejecutar
+npx prisma db push
+npx prisma db seed  # Si tienes seeds configurados
+```
+
+### Reconstruir todo desde cero
+
+```bash
+# Limpiar todo
+./scripts/stop.sh clean
+
+# Reconstruir
+./scripts/start.sh dev
+```
+
+### Ver logs de errores
+
+```bash
+# Logs de la aplicación
+./scripts/logs.sh app
+
+# Logs de PostgreSQL
+./scripts/logs.sh db
+
+# Logs de todo
+./scripts/logs.sh all
+```
+
+### Docker Desktop no está corriendo
+
+```bash
+# En macOS
+open -a Docker
+
+# En Windows
+# Abrir Docker Desktop desde el menú inicio
+```
+
 ## 📚 Recursos
 
 - [Next.js Documentation](https://nextjs.org/docs)
@@ -242,6 +415,7 @@ NEXTAUTH_URL=https://tu-dominio.vercel.app
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 - [Zod Documentation](https://zod.dev)
 - [NextAuth.js Documentation](https://next-auth.js.org)
+- [Docker Documentation](https://docs.docker.com)
 
 ## 📝 Licencia
 
