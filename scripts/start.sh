@@ -45,13 +45,13 @@ start_dev() {
     fi
 
     # Iniciar servicios
-    docker-compose up -d --build
+    docker compose up -d --build
 
     echo ""
     echo -e "${GREEN}✓ Servicios iniciados correctamente${NC}"
     echo ""
     echo -e "${BLUE}📊 Estado de los servicios:${NC}"
-    docker-compose ps
+    docker compose ps
     echo ""
     echo -e "${GREEN}🌐 Aplicación disponible en: ${NC}http://localhost:3000"
     echo -e "${GREEN}🗄️  PostgreSQL disponible en: ${NC}localhost:5432"
@@ -76,7 +76,7 @@ start_prod() {
     fi
 
     # Iniciar servicios
-    docker-compose -f docker-compose.prod.yml up -d --build
+    docker compose -f docker-compose.prod.yml up -d --build
 
     echo ""
     echo -e "${GREEN}✓ Servicios de producción iniciados${NC}"
@@ -93,11 +93,11 @@ start_studio() {
     if ! docker ps | grep -q template-gestion-db; then
         echo -e "${YELLOW}⚠️  Base de datos no está corriendo${NC}"
         echo -e "${YELLOW}Iniciando servicios de desarrollo primero...${NC}"
-        docker-compose up -d postgres
+        docker compose up -d postgres
         sleep 3
     fi
 
-    docker-compose --profile studio up -d prisma-studio
+    docker compose --profile studio up -d prisma-studio
 
     echo ""
     echo -e "${GREEN}✓ Prisma Studio iniciado${NC}"

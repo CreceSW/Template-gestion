@@ -47,19 +47,19 @@ case $SERVICE in
         check_running
         echo -e "${BLUE}📝 Logs de la aplicación Next.js (Ctrl+C para salir)${NC}"
         echo ""
-        docker-compose logs -f app-dev
+        docker compose logs -f app-dev
         ;;
     db)
         check_running
         echo -e "${BLUE}📝 Logs de PostgreSQL (Ctrl+C para salir)${NC}"
         echo ""
-        docker-compose logs -f postgres
+        docker compose logs -f postgres
         ;;
     all)
         check_running
         echo -e "${BLUE}📝 Logs de todos los servicios (Ctrl+C para salir)${NC}"
         echo ""
-        docker-compose logs -f
+        docker compose logs -f
         ;;
     help|--help|-h)
         show_help

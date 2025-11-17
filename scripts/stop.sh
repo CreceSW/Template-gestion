@@ -26,7 +26,7 @@ stop_dev() {
     echo -e "${YELLOW}🛑 Deteniendo servicios de DESARROLLO...${NC}"
     echo ""
 
-    docker-compose down
+    docker compose down
 
     echo ""
     echo -e "${GREEN}✓ Servicios de desarrollo detenidos${NC}"
@@ -37,7 +37,7 @@ stop_prod() {
     echo -e "${YELLOW}🛑 Deteniendo servicios de PRODUCCIÓN...${NC}"
     echo ""
 
-    docker-compose -f docker-compose.prod.yml down
+    docker compose -f docker-compose.prod.yml down
 
     echo ""
     echo -e "${GREEN}✓ Servicios de producción detenidos${NC}"
@@ -49,13 +49,13 @@ stop_all() {
     echo ""
 
     # Detener Prisma Studio si está corriendo
-    docker-compose --profile studio down 2>/dev/null || true
+    docker compose --profile studio down 2>/dev/null || true
 
     # Detener desarrollo
-    docker-compose down 2>/dev/null || true
+    docker compose down 2>/dev/null || true
 
     # Detener producción
-    docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+    docker compose -f docker-compose.prod.yml down 2>/dev/null || true
 
     echo ""
     echo -e "${GREEN}✓ Todos los servicios detenidos${NC}"
@@ -73,9 +73,9 @@ clean_all() {
         echo ""
 
         # Detener y eliminar todo incluyendo volúmenes
-        docker-compose --profile studio down -v 2>/dev/null || true
-        docker-compose down -v 2>/dev/null || true
-        docker-compose -f docker-compose.prod.yml down -v 2>/dev/null || true
+        docker compose --profile studio down -v 2>/dev/null || true
+        docker compose down -v 2>/dev/null || true
+        docker compose -f docker-compose.prod.yml down -v 2>/dev/null || true
 
         echo ""
         echo -e "${GREEN}✓ Limpieza completada${NC}"
