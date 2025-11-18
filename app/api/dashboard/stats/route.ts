@@ -127,11 +127,110 @@ export async function GET(request: Request) {
       },
     })
 
-    // Calcular tendencias (comparar con mes anterior - simulado por ahora)
-    const customersTrend = 5.2
-    const productsTrend = -2.1
-    const ordersTrend = 8.7
-    const revenueTrend = 12.5
+    // Calcular tendencias comparando con mes anterior
+    const now = new Date()
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+
+    // Obtener datos del mes actual y anterior para tendencias
+    const [
+      currentMonthCustomers,
+      lastMonthCustomers,
+      currentMonthProducts,
+      lastMonthProducts,
+      currentMonthOrders,
+      lastMonthOrders,
+      currentMonthRevenue,
+      lastMonthRevenue,
+    ] = await Promise.all([
+      // Clientes mes actual
+      prisma.customer.count({
+        where: {
+          userId: session.user.id,
+          createdAt: { gte: startOfCurrentMonth },
+        },
+      }),
+      // Clientes mes anterior
+      prisma.customer.count({
+        where: {
+          userId: session.user.id,
+          createdAt: {
+            gte: startOfLastMonth,
+            lte: endOfLastMonth,
+          },
+        },
+      }),
+      // Productos mes actual
+      prisma.product.count({
+        where: {
+          userId: session.user.id,
+          createdAt: { gte: startOfCurrentMonth },
+        },
+      }),
+      // Productos mes anterior
+      prisma.product.count({
+        where: {
+          userId: session.user.id,
+          createdAt: {
+            gte: startOfLastMonth,
+            lte: endOfLastMonth,
+          },
+        },
+      }),
+      // Órdenes mes actual
+      prisma.order.count({
+        where: {
+          customer: { userId: session.user.id },
+          createdAt: { gte: startOfCurrentMonth },
+        },
+      }),
+      // Órdenes mes anterior
+      prisma.order.count({
+        where: {
+          customer: { userId: session.user.id },
+          createdAt: {
+            gte: startOfLastMonth,
+            lte: endOfLastMonth,
+          },
+        },
+      }),
+      // Ingresos mes actual
+      prisma.order.aggregate({
+        where: {
+          customer: { userId: session.user.id },
+          status: { not: 'CANCELLED' },
+          createdAt: { gte: startOfCurrentMonth },
+        },
+        _sum: { total: true },
+      }),
+      // Ingresos mes anterior
+      prisma.order.aggregate({
+        where: {
+          customer: { userId: session.user.id },
+          status: { not: 'CANCELLED' },
+          createdAt: {
+            gte: startOfLastMonth,
+            lte: endOfLastMonth,
+          },
+        },
+        _sum: { total: true },
+      }),
+    ])
+
+    // Calcular porcentajes de tendencia
+    const calculateTrend = (current: number, previous: number): number => {
+      if (previous === 0) return current > 0 ? 100 : 0
+      return Number((((current - previous) / previous) * 100).toFixed(1))
+    }
+
+    const customersTrend = calculateTrend(currentMonthCustomers, lastMonthCustomers)
+    const productsTrend = calculateTrend(currentMonthProducts, lastMonthProducts)
+    const ordersTrend = calculateTrend(currentMonthOrders, lastMonthOrders)
+    const revenueTrend = calculateTrend(
+      Number(currentMonthRevenue._sum.total || 0),
+      Number(lastMonthRevenue._sum.total || 0)
+    )
 
     return NextResponse.json({
       customers: {

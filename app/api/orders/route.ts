@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createNotification } from '@/lib/auth-utils'
 import { z } from 'zod'
 
 const orderItemSchema = z.object({
@@ -123,6 +124,27 @@ export async function POST(request: Request) {
       )
     }
 
+    // Validar stock disponible para cada producto
+    const stockErrors: string[] = []
+    for (const item of validatedData.items) {
+      const product = products.find(p => p.id === item.productId)
+      if (product && product.stock < item.quantity) {
+        stockErrors.push(
+          `${product.name}: Stock insuficiente (disponible: ${product.stock}, solicitado: ${item.quantity})`
+        )
+      }
+    }
+
+    if (stockErrors.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Stock insuficiente para completar la orden',
+          details: stockErrors
+        },
+        { status: 400 }
+      )
+    }
+
     // Calcular totales
     const subtotal = validatedData.items.reduce((sum, item) => {
       return sum + (item.price * item.quantity)
@@ -164,9 +186,11 @@ export async function POST(request: Request) {
       },
     })
 
-    // Actualizar stock de productos
+    // Actualizar stock de productos y verificar stock bajo
+    const lowStockProducts: { name: string; stock: number; minStock: number }[] = []
+
     for (const item of validatedData.items) {
-      await prisma.product.update({
+      const updatedProduct = await prisma.product.update({
         where: { id: item.productId },
         data: {
           stock: {
@@ -174,6 +198,35 @@ export async function POST(request: Request) {
           },
         },
       })
+
+      // Verificar si el stock quedó por debajo del mínimo
+      if (updatedProduct.stock <= updatedProduct.minStock) {
+        lowStockProducts.push({
+          name: updatedProduct.name,
+          stock: updatedProduct.stock,
+          minStock: updatedProduct.minStock,
+        })
+      }
+    }
+
+    // Crear notificación de orden creada
+    await createNotification(
+      session.user.id,
+      'ORDER_CREATED',
+      'Nueva orden creada',
+      `Orden ${orderNumber} creada para ${customer.name} por $${total.toFixed(2)}`,
+      { orderId: order.id, orderNumber, customerId: customer.id, total }
+    )
+
+    // Crear notificaciones de stock bajo
+    for (const product of lowStockProducts) {
+      await createNotification(
+        session.user.id,
+        'LOW_STOCK',
+        'Stock bajo',
+        `${product.name} tiene stock bajo (${product.stock}/${product.minStock})`,
+        { productName: product.name, currentStock: product.stock, minStock: product.minStock }
+      )
     }
 
     return NextResponse.json(order, { status: 201 })
