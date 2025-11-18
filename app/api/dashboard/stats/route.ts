@@ -18,8 +18,7 @@ export async function GET(request: Request) {
     const [
       totalCustomers,
       activeCustomers,
-      totalProducts,
-      lowStockProducts,
+      allProducts,
       totalOrders,
       pendingOrders,
       completedOrders,
@@ -33,15 +32,10 @@ export async function GET(request: Request) {
       prisma.customer.count({
         where: { userId: session.user.id, status: 'ACTIVE' },
       }),
-      // Productos
-      prisma.product.count({
+      // Productos - obtener todos para calcular stock bajo
+      prisma.product.findMany({
         where: { userId: session.user.id },
-      }),
-      prisma.product.count({
-        where: {
-          userId: session.user.id,
-          stock: { lte: prisma.product.fields.minStock },
-        },
+        select: { id: true, name: true, stock: true, minStock: true },
       }),
       // Órdenes
       prisma.order.count({
@@ -96,6 +90,10 @@ export async function GET(request: Request) {
       }),
     ])
 
+    // Calcular productos con stock bajo
+    const totalProducts = allProducts.length
+    const lowStockProducts = allProducts.filter(p => p.stock <= p.minStock).length
+
     // Calcular ingresos totales
     const ordersWithTotal = await prisma.order.aggregate({
       where: {
@@ -113,19 +111,11 @@ export async function GET(request: Request) {
 
     const totalRevenue = ordersWithTotal._sum.total || 0
 
-    // Productos con stock bajo
-    const lowStockProductsList = await prisma.product.findMany({
-      where: {
-        userId: session.user.id,
-        stock: {
-          lte: prisma.product.fields.minStock,
-        },
-      },
-      take: 5,
-      orderBy: {
-        stock: 'asc',
-      },
-    })
+    // Productos con stock bajo (filtrar de los ya obtenidos)
+    const lowStockProductsList = allProducts
+      .filter(p => p.stock <= p.minStock)
+      .sort((a, b) => a.stock - b.stock)
+      .slice(0, 5)
 
     // Calcular tendencias (comparar con mes anterior - simulado por ahora)
     const customersTrend = 5.2
